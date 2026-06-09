@@ -57,6 +57,16 @@ The native `announce` / `announce_with_log` paths are **untouched**; `announceWi
 
 Re-verify at deploy time against `wormhole.com/docs/products/reference/contract-addresses`.
 
+### Reference deployments (Testnet)
+
+| Role | Ethereum Sepolia | Solana devnet |
+|---|---|---|
+| UAB sender | `0x872787c0BD1A0C71e6D1be5a144EB044e0CB2069` (UABSender) | `HGFn2fH7bVQ5cSuiG52NjzN9m11YrB3FZUfoN9b9A5jf` (stealth_announcer · `announce_with_relay`) |
+| UAB receiver | `0x9eF189f7a263F870Cf80f9A89d1349A6AF7b15cF` (UABReceiver) | `7d4Sbmmpy954JwSNdjwf31pgbeWUQqwpgNdte5iy3vuM` (uab_receiver) |
+| Wormhole emitter | `0x000…872787c0bd1a0c71e6d1be5a144eb044e0cb2069` | PDA `Ay5gspEYbCwKg2feCipJyrFWBp1W6EwScwDbnW6aTMKJ` |
+
+Both directions are verified end-to-end through the live testnet guardian network (`opaquecash/relayer`).
+
 ## Emitter identity and authentication
 
 A VAA carries `(emitterChainId, emitterAddress, sequence)`. `emitterAddress` is 32 bytes:
