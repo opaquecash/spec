@@ -1,7 +1,7 @@
 # PSR — Programmable Stealth Reputation
 
 **Status:** Draft · **Canonical circuit version:** V2 (`stealth_reputation`, depth 20) · **License:** CC0-1.0
-**Reference implementation:** `opaquecash/solana` (schema-registry, attestation-engine-v2, reputation-verifier, groth16-verifier). Ethereum implementation is V1 and is being upgraded to V2 (see §8).
+**Reference implementation:** `opaquecash/solana` (schema-registry, attestation-engine-v2, reputation-verifier, groth16-verifier). The Ethereum implementation runs the full V2 stack (`OpaqueSchemaRegistry`, `OpaqueAttestationRegistry`, `OpaqueReputationVerifierV2`, `Groth16VerifierV2`); Solana still pairs the V2 schema layer with a V1 verifier (see §5).
 
 > PSR is Opaque's privacy-preserving reputation layer: a stealth identity can hold schema-bound attestations and prove possession of one — to a contract or a service — without revealing the stealth address, the wallet behind it, or any other attestation. This document specifies the **canonical V2 design**. Where the deployed code is still V1, that is called out explicitly; V2 is the target both chains converge on (project decision D3).
 
@@ -96,9 +96,9 @@ Keeping `issuer_pk_x`, `trait_data_hash`, and `nonce` private prevents an observ
 
 **Solana — `groth16-verifier` (program `6mFaKyp7F4NqNeoiBLEWSqy5wJSk7rWf1EYumVXgHvhQ`):** verifies a Groth16 proof `(A[64], B[128], C[64])` against an array of 32-byte big-endian public signals using Solana's `alt_bn128` (BN254) syscalls; returns validity.
 
-**Ethereum:** `OpaqueReputationVerifier.sol` + a snarkjs-generated `Groth16Verifier.sol` perform the same check via the `ecPairing` precompile (`0x08`, EIP-197) and `ecAdd`/`ecMul` (`0x06`/`0x07`, EIP-196), with an equivalent root-history + nullifier registry.
+**Ethereum — `OpaqueReputationVerifierV2.sol` + `Groth16VerifierV2.sol`:** perform the V2 check against the four V2 public signals via the `ecPairing` precompile (`0x08`, EIP-197) and `ecAdd`/`ecMul` (`0x06`/`0x07`, EIP-196), with an equivalent root-history + nullifier registry. Schemas and attestations live in `OpaqueSchemaRegistry.sol` / `OpaqueAttestationRegistry.sol` (block numbers stand in for slots).
 
-> **⚠ Live state is V1, and this is the key implementation gap.** The deployed `reputation-verifier::verify_reputation` builds the **V1** public-signals array `[nullifier, is_valid=1, root, attestation_id, external_nullifier]` (five signals) and CPIs a `groth16-verifier` whose verifying key is V1. This does **not** match the V2 circuit's four public signals `[merkle_root, attestation_id, external_nullifier, nullifier_hash]`. **Making V2 canonical (D3) therefore requires, on both chains:** regenerating the verifying key from the V2 circuit, rewriting the verifier's public-signals construction to the V2 layout (supply `nullifier_hash` as an input, drop `is_valid`), and updating the `attestation_id`/`external_nullifier` field encoding accordingly. Shipping the V2 circuit against the V1 verifier MUST NOT be done — the layouts are incompatible and a mismatch either fails closed or, worse, verifies the wrong statement.
+> **⚠ Solana's deployed verifier is still V1.** The deployed `reputation-verifier::verify_reputation` builds the **V1** public-signals array `[nullifier, is_valid=1, root, attestation_id, external_nullifier]` (five signals) and CPIs a `groth16-verifier` whose verifying key is V1. This does **not** match the V2 circuit's four public signals `[merkle_root, attestation_id, external_nullifier, nullifier_hash]`. **Ethereum has completed this upgrade** (`OpaqueReputationVerifierV2` + `Groth16VerifierV2`, four V2 signals); **Solana still needs it:** regenerate the verifying key from the V2 circuit, rewrite the verifier's public-signals construction to the V2 layout (supply `nullifier_hash` as an input, drop `is_valid`), and update the `attestation_id`/`external_nullifier` field encoding accordingly. Verifying V2 proofs against the V1 verifying key/signal layout MUST NOT be done — the layouts are incompatible and a mismatch either fails closed or, worse, verifies the wrong statement.
 
 ### 6. Nullifiers and Sybil resistance
 
@@ -120,7 +120,7 @@ Keeping `issuer_pk_x`, `trait_data_hash`, and `nonce` private prevents an observ
 
 ## Backwards Compatibility
 
-PSR is an Opaque-original primitive, not an existing EIP/SIMD. It builds on CSAP (so it inherits scheme id 1 and the stealth identity model) and is conceptually compatible with EAS-style schema/attestation/resolver tooling. The only internal compatibility concern is the V1↔V2 verifier mismatch in §5, which is an implementation task, not a standards conflict. Cross-chain: `schema_id`, `uid`, and the ZK statement are hash- and curve-defined and therefore chain-portable; the divergence is purely that Solana currently runs the V2 schema layer with a V1 verifier and Ethereum runs V1 throughout. Canonical V2 unifies them.
+PSR is an Opaque-original primitive, not an existing EIP/SIMD. It builds on CSAP (so it inherits scheme id 1 and the stealth identity model) and is conceptually compatible with EAS-style schema/attestation/resolver tooling. The only internal compatibility concern is the V1↔V2 verifier mismatch in §5, which is an implementation task, not a standards conflict. Cross-chain: `schema_id`, `uid`, and the ZK statement are hash- and curve-defined and therefore chain-portable; the divergence is purely that Solana currently runs the V2 schema layer with a V1 verifier, while Ethereum runs the full V2 stack. Completing the Solana verifier upgrade unifies them.
 
 ## Test Vectors
 
@@ -153,7 +153,9 @@ Copyright and related rights waived via [CC0-1.0](https://creativecommons.org/pu
 | Solana Devnet | `attestation_engine_v2` | `4T9kPCVCFGdEuLpEqRJihsPCbEEo2LWWDEPFvUESEqtM` | V2 |
 | Solana Devnet | `reputation_verifier` | `BSnkCDoTpgNVN5BbF3aN5L5EJPiaYUkqqj9MHp8kaqWM` | V1 verifier (to upgrade) |
 | Solana Devnet | `groth16_verifier` | `6mFaKyp7F4NqNeoiBLEWSqy5wJSk7rWf1EYumVXgHvhQ` | V1 vkey (to upgrade) |
-| Ethereum Sepolia | `OpaqueReputationVerifier` | `0x30B750Ae9851e104F8dbB4B8082b1a07a34885B0` | V1 (to upgrade to V2) |
-| Ethereum Sepolia | `Groth16Verifier` | `0x78A169b6E308Fd5BfAfc728f216CdB06EcEdde06` | V1 vkey |
+| Ethereum Sepolia | `OpaqueSchemaRegistry` | `0xAA5F3942117bD48E7Cd81A500A8b7Bbb122ae80f` | V2 |
+| Ethereum Sepolia | `OpaqueAttestationRegistry` | `0x049aF9CBB62387034CDd5403794a94E9c000ACCc` | V2 |
+| Ethereum Sepolia | `OpaqueReputationVerifierV2` | `0x18cEc2812953c2E9bcADE20CbF6415BD36aEb44f` | V2 |
+| Ethereum Sepolia | `Groth16VerifierV2` | `0x49A212bdbc52F1cb6C93623FC7814a61Fc71ddB5` | V2 vkey |
 
 [CSAP.md]: ./CSAP.md
