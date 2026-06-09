@@ -6,8 +6,8 @@ Canonical specifications for the Opaque privacy protocol. These documents descri
 |---|---|---|
 | [CSAP.md](./CSAP.md) | Cross-chain Stealth Address Protocol — the dual-key stealth payment layer (DKSAP) | Draft v1 |
 | [PSR.md](./PSR.md) | Programmable Stealth Reputation — schema-bound attestations + ZK reputation proofs | Draft (canonical V2) |
-| UAB.md | Universal Announcement Bus — cross-chain announcement transport (Wormhole) | Planned |
-| payload-format.md | The 96-byte cross-chain payload encoding | Planned (see CSAP §2.6) |
+| [UAB.md](./UAB.md) | Universal Announcement Bus — cross-chain announcement transport (Wormhole) | Draft |
+| [payload-format.md](./payload-format.md) | The 96-byte cross-chain payload encoding | Draft v1 |
 | nullifier-registry.md | Cross-chain nullifier format | Planned |
 | changelog.md | Version history | Planned |
 
