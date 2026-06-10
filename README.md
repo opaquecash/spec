@@ -8,8 +8,8 @@ Canonical specifications for the Opaque privacy protocol. These documents descri
 | [PSR.md](./PSR.md) | Programmable Stealth Reputation — schema-bound attestations + ZK reputation proofs | Draft (canonical V2) |
 | [UAB.md](./UAB.md) | Universal Announcement Bus — cross-chain announcement transport (Wormhole) | Draft |
 | [payload-format.md](./payload-format.md) | The 96-byte cross-chain payload encoding | Draft v1 |
-| nullifier-registry.md | Cross-chain nullifier format | Planned |
-| changelog.md | Version history | Planned |
+| [nullifier-registry.md](./nullifier-registry.md) | Cross-chain nullifier format and consume-once registry semantics | Draft v1 |
+| [changelog.md](./changelog.md) | Version history from CSAP v1 forward | Living |
 
 ## What Opaque is
 

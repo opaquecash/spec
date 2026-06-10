@@ -187,6 +187,10 @@ A scanner holds the viewing private key `v` and the spending public key `S` (the
 
 A scanner that has only `v` (not `s`) can *detect* all incoming payments but cannot spend — enabling delegated/watch-only scanning. This is the basis for the viewing-key disclosure features in `PSR.md` / Phase 5.
 
+### 2.9 Name-service meta-address records (ONS seed)
+
+A meta-address MAY additionally be published under an existing name service so senders can resolve a human-readable name instead of a registry lookup. The record key is the reverse-DNS string **`com.opaque.meta`** (ENSIP-5 style): on ENS it is a text record (`text(node, "com.opaque.meta")`), on SNS the equivalent record field of the `.sol` domain. The record value is the §2.1 serialisation — the `0x`-prefixed 132-hex-char `V‖S` meta-address — optionally prefixed with `st:opq:` for self-description; resolvers MUST accept both forms and MUST validate that both 33-byte halves are valid compressed secp256k1 points before use. The on-chain registry (§2.7) remains authoritative where both exist: a resolver finding a conflict SHOULD prefer the registry entry for the address the name resolves to. This record is the read-path seed for the Opaque Name Service (`alice.opq.eth`, specified separately); until ONS ships, writers set the record manually through their name-service tooling.
+
 ## Rationale
 
 - **secp256k1 + Keccak-256.** Chosen so a derived stealth identifier is a valid Ethereum address with no extra mapping, and so the identical math runs on Solana (via the `k256` crate / `@noble/curves`). This is what makes one scanner cover both chains.
