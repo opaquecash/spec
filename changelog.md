@@ -4,6 +4,20 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-06-10 (V1 retirement + client V2)
+
+- **V1 `stealth_attestation` retired.** Circuit removed from `circuits/`
+  (history retains it), V1 entry point and verification key removed from the
+  Solana `groth16-verifier` (redeployed), V1 artifacts removed from the app.
+  PSR.md is V2-only; the V1↔V2 mismatch warnings are resolved.
+- **TypeScript prover migrated to V2.** `@opaquecash/psr-prover` builds the V2
+  leaf (`Poseidon(stealth_pk, schema_id, issuer_pk_x, trait_data_hash, nonce)`)
+  with deterministic dev-mode defaults, parses the four V2 signals, and
+  defaults to the `circuits/v2` artifacts. A freshly client-generated proof was
+  verified on devnet through the SDK submit path — the full pipeline
+  (prove → root registration → on-chain verify → nullifier consumption) is V2
+  end to end.
+
 ## 2026-06-10
 
 - **Solana on-chain PSR V2 complete.** Devnet `groth16-verifier` and
