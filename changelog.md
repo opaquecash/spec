@@ -6,6 +6,16 @@ normative changes from CSAP v1 forward.
 
 ## 2026-06-10
 
+- **Solana on-chain PSR V2 complete.** Devnet `groth16-verifier` and
+  `reputation-verifier` upgraded: real V2 verifying key, fixed field constants,
+  `verify_reputation` rewritten to the V2 signal layout (`nullifier_hash` as
+  input via `verify_proof_v2` CPI). First real proof verified on devnet with
+  nullifier consumption and replay rejection. Client gap: the TypeScript
+  prover still targets V1 and is the remaining migration.
+
+### Earlier the same day
+
+
 - **V2 verification key pinned.** A real Groth16 proof generated with the
   production V2 proving key is now committed as a fixture in
   `circuits/test/fixtures/v2/` and verified in CI against the snarkjs vkey, the
