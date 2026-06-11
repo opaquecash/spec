@@ -6,6 +6,13 @@ normative changes from CSAP v1 forward.
 
 ## 2026-06-11
 
+- **relayer-market.md Draft v1.** Gas-private submission market: combined
+  stake-registry + job-escrow contract per chain so submit-or-slash is
+  on-chain-verifiable (create/accept-bond/submit/slash/cancel), GossipSub
+  `opaque/jobs/v1` wire formats (advert, stake-backed bid, NaCl-box payload
+  delivery), HTTP gateway intake, bond = fee, native-asset pre-funded fees
+  (fee-in-proof deferred), and UAB/ONS VAA delivery as a node duty replacing
+  the Phase-1 central relay.
 - **ONS.md Draft v1.** Opaque Name Service: `*.opq.eth` subnames over an
   ENSIP-10 wildcard resolver on Ethereum (canonical), Wormhole-mirrored
   read-only PDAs on Solana, claims from either chain. Normative consistency
