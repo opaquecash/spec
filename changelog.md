@@ -4,6 +4,19 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-06-11
+
+- **ONS.md Draft v1.** Opaque Name Service: `*.opq.eth` subnames over an
+  ENSIP-10 wildcard resolver on Ethereum (canonical), Wormhole-mirrored
+  read-only PDAs on Solana, claims from either chain. Normative consistency
+  model is **eventually consistent, canonical-chain-wins** — no atomic
+  cross-chain claim exists or is claimed. Defines the 164-byte mirror payload
+  (Ethereum → Solana), the variable-length claim payload (Solana → Ethereum),
+  the provisional-claim reconciliation states
+  (`pending`/`confirmed`/`lost`/`expired` with a 24 h pending window), and the
+  four SDK resolution paths. Meta-addresses are sourced from the deployed
+  ERC-6538 registry, not a parallel store.
+
 ## 2026-06-10 (V1 retirement + client V2)
 
 - **V1 `stealth_attestation` retired.** Circuit removed from `circuits/`

@@ -9,6 +9,7 @@ Canonical specifications for the Opaque privacy protocol. These documents descri
 | [UAB.md](./UAB.md) | Universal Announcement Bus — cross-chain announcement transport (Wormhole) | Draft |
 | [payload-format.md](./payload-format.md) | The 96-byte cross-chain payload encoding | Draft v1 |
 | [nullifier-registry.md](./nullifier-registry.md) | Cross-chain nullifier format and consume-once registry semantics | Draft v1 |
+| [ONS.md](./ONS.md) | Opaque Name Service — cross-chain naming (`*.opq.eth`), canonical-chain-wins | Draft v1 |
 | [changelog.md](./changelog.md) | Version history from CSAP v1 forward | Living |
 
 ## What Opaque is
