@@ -60,7 +60,8 @@ by the custodian DKG ceremony and its secret never exists whole.
 
 `splitViewingKey(viewingKey, m, n)` splits the 32-byte CSAP viewing-key scalar
 (CSAP §2.1) into `n` shares with threshold `m` using Shamir secret sharing over
-GF(256) (`shamirs-secret-sharing`). Each share is wrapped in a versioned
+GF(256) (the independently audited `shamir-secret-sharing`). Each share is
+wrapped in a versioned
 envelope:
 
 ```
