@@ -11,6 +11,7 @@ Canonical specifications for the Opaque privacy protocol. These documents descri
 | [nullifier-registry.md](./nullifier-registry.md) | Cross-chain nullifier format and consume-once registry semantics | Draft v1 |
 | [ONS.md](./ONS.md) | Opaque Name Service — cross-chain naming (`*.opq.eth`), canonical-chain-wins | Draft v1 |
 | [relayer-market.md](./relayer-market.md) | Relayer market — gas-private submission (stake, blind jobs, submit-or-slash) | Draft v1 |
+| [privacy-pool.md](./privacy-pool.md) | Privacy pool — amount privacy + association-set compliance (Privacy Pools model) | Draft v1 |
 | [changelog.md](./changelog.md) | Version history from CSAP v1 forward | Living |
 
 ## What Opaque is

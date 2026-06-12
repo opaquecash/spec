@@ -4,6 +4,20 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-06-12
+
+- **privacy-pool.md Draft v1.** Amount privacy via the Privacy Pools
+  (Buterin/Soleimani association-set) construction: `commitment =
+  Poseidon(value, label, Poseidon(nullifier, secret))`, an append-only state
+  tree of commitments and an ASP-curated association tree of labels, a
+  partial-withdrawal Groth16 proof (`withdrawal.circom`) that folds
+  state-membership + association-membership + nullifier + value-accounting +
+  `context` binding into one proof, and a standalone `association.circom` ASP
+  statement. **Verified ERC-8065 is the unrelated ZK Token Wrapper, not an
+  association-set pool — no ERC-8065 compatibility is claimed.** Mainnet gated
+  on circuit + contract audits, a production trusted-setup ceremony, and a
+  legal opinion.
+
 ## 2026-06-11
 
 - **relayer-market.md Draft v1.** Gas-private submission market: combined
