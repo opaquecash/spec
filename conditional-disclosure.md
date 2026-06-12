@@ -146,12 +146,16 @@ which contains no note data) and rely on the circuit to enforce qualification.
 `context` field element:
 
 ```
-context = keccak256(encode(policyId, caseId, requester)) mod r        (r = BN254 scalar field)
+context = reduce( keccak256(encode(policyId, caseId, requester)) )
 m       = be32(context)
 ```
 
-- Ethereum: `encode` = `abi.encode(uint256 policyId, bytes32 caseId, address requester)`.
-- Solana: `encode` = `policy_pda(32) ‖ case_id(32) ‖ requester_pubkey(32)`.
+- Ethereum: `encode` = `abi.encode(uint256 policyId, bytes32 caseId, address requester)`;
+  `reduce` = `mod r` (r = BN254 scalar field).
+- Solana: `encode` = `policy_pda(32) ‖ case_id(32) ‖ requester_pubkey(32)`; `reduce` =
+  clear the top 3 bits (`< 2^253 < r`), matching the pool program's `scope`/`context`
+  convention. The two chains' contexts intentionally differ — a context is
+  chain-local, recomputed and checked by the registry that consumes it.
 
 `caseId` is an opaque requester-chosen identifier (legal case number, audit
 engagement id). Custodians MUST display and review `(policyId, caseId,
