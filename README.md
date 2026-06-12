@@ -21,14 +21,13 @@ An open, serverless, cross-chain privacy protocol. Stealth addresses hide who pa
 
 ## Reference deployments
 
-| Chain | Contract / Program | Address / Program ID |
-|---|---|---|
-| Ethereum Sepolia | StealthMetaAddressRegistry (ERC-6538) | `0x77425e04163d608B876c7f50E34A378624A12067` |
-| Ethereum Sepolia | StealthAddressAnnouncer (ERC-5564) | `0x840f72249A8bF6F10b0eB64412E315efBD730865` |
-| Solana Devnet | stealth_registry | `E9LBRG5eP2kvuNfveouqQ9tA5P6nrpyLyWFjH9MFYVno` |
-| Solana Devnet | stealth_announcer | `HGFn2fH7bVQ5cSuiG52NjzN9m11YrB3FZUfoN9b9A5jf` |
-| Ethereum Sepolia | UABSender / UABReceiver | `0x872787c0BD1A0C71e6D1be5a144EB044e0CB2069` / `0x9eF189f7a263F870Cf80f9A89d1349A6AF7b15cF` |
-| Solana Devnet | uab_receiver | `7d4Sbmmpy954JwSNdjwf31pgbeWUQqwpgNdte5iy3vuM` |
+Every spec'd component is live on Ethereum Sepolia + Solana devnet (testnet only).
+Addresses and program ids are maintained in one place — the generated
+`@opaquecash/deployments` package ([`opaquecash/sdk`](https://github.com/opaquecash/sdk))
+and the [deployments page](https://docs.opaque.cash/protocol/deployments) — and in the
+contract/program tables of the [`ethereum`](https://github.com/opaquecash/ethereum) and
+[`solana`](https://github.com/opaquecash/solana) READMEs. This file deliberately does
+not duplicate them.
 
 ## License
 
