@@ -78,8 +78,12 @@ achieved at two levels:
 | Domain | Formula | Registry | Status |
 |---|---|---|---|
 | PSR V2 reputation proof | `Poseidon(stealth_pk, external_nullifier)` | reputation verifier (per chain) | **Live (testnet)** |
-| Privacy-pool withdrawal | defined in `privacy-pool.md` (Phase 8); MUST include the commitment secret and a leaf index | pool contract (per chain) | Reserved |
-| Conditional disclosure (threshold viewing keys, Phase 9) | TBD | TBD | Reserved |
+| Privacy-pool withdrawal | `Poseidon(nullifier)` — see `privacy-pool.md` §3 | pool contract (per chain) | **Live (testnet)** |
+| Conditional disclosure (threshold viewing keys) | `Poseidon(nullifier, context, DOMAIN_DISCLOSURE)` with `DOMAIN_DISCLOSURE = keccak256("opaque/disclosure/v1") mod r` — see `conditional-disclosure.md` §7 | disclosure verifier (per chain) | Specified |
+
+The three formulas use distinct Poseidon arities (1, 2, 3 — the disclosure
+domain additionally carries a constant tag), satisfying the layout rule above
+even though each registry is already a separate contract/program.
 
 ## 5. Cross-chain replay model
 

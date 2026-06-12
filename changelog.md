@@ -6,6 +6,20 @@ normative changes from CSAP v1 forward.
 
 ## 2026-06-12
 
+- **conditional-disclosure.md Draft v1.** Threshold viewing keys: selective
+  M-of-N disclosure without full viewing-key exposure. Active path is a
+  pool-scoped Groth16 proof (`conditional_disclosure.circom`: state-tree
+  membership + `value > threshold` qualification + disclosed `value`/`label`)
+  gated by a **FROST(secp256k1) / BIP-340** custodian quorum signature verified
+  on-chain (ecrecover trick / `secp256k1_recover`) over the proof's `context`;
+  Shamir splitting of the viewing key is the documented recovery backstop
+  (reconstruction reveals the full key — normative warning). Closes the
+  conditional-disclosure nullifier reservation:
+  `Poseidon(nullifier, context, DOMAIN_DISCLOSURE)` with
+  `DOMAIN_DISCLOSURE = keccak256("opaque/disclosure/v1") mod r`.
+- **nullifier-registry.md updated:** privacy-pool row marked live
+  (`Poseidon(nullifier)`), disclosure row specified; arity-based layout
+  separation noted.
 - **privacy-pool.md Draft v1.** Amount privacy via the Privacy Pools
   (Buterin/Soleimani association-set) construction: `commitment =
   Poseidon(value, label, Poseidon(nullifier, secret))`, an append-only state
