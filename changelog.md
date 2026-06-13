@@ -4,6 +4,21 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-06-13
+
+- **relayer-market.md §9 added (fee-in-token sweep).** Escrow-free, gasless
+  withdrawal of an ERC-20/SPL balance from a one-time stealth address that holds
+  the token but no native gas. Ethereum uses a stateless `StealthTokenSweep`
+  forwarder: the owner signs an EIP-712 `Sweep` authorization
+  (`token,owner,destination,value,fee,nonce,deadline`, domain
+  `OpaqueStealthTokenSweep`/`1`) plus an EIP-2612 `permit`; the relayer submits,
+  pays gas, and is reimbursed `fee` in-token while the destination receives
+  `value - fee`. Solana needs no program: the relayer is the fee payer while the
+  reconstructed stealth keypair signs the SPL transfer as authority. No bond or
+  slashing (no escrow at risk); destination, amount, and fee are owner-signed, so
+  a relayer can only execute the signed sweep or nothing. Complements, and is
+  independent of, the native-fee job escrow (§5).
+
 ## 2026-06-12
 
 - **conditional-disclosure.md Draft v1.** Threshold viewing keys: selective

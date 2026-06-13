@@ -156,6 +156,12 @@ public signal inside the ZK proof itself) is the endgame and is deferred; the es
 interface is designed so a future `submitJob` variant can release a proof-committed
 fee without changing the market protocol.
 
+**Fee-in-token sweep.** For the specific case of moving an ERC-20/SPL balance out of a
+one-time stealth address that holds the token but no native gas, §9 defines a
+complementary mechanism in which the relayer is paid its fee *in the swept token* and no
+native-asset escrow is needed. It is escrow-free and does not use `createJob`/`acceptJob`;
+it composes with the market (a registered relayer MAY offer it) but is independent of it.
+
 ## 6. Slashing
 
 v1 slashes exactly one offence — *accepted but did not submit by the deadline* —
@@ -190,6 +196,55 @@ bond = fee.
   verify jobs on-chain before bonding anything.
 - **Replay.** `jobId` uniqueness is enforced on-chain; bids bind to `jobId` and the
   registered operator key.
+
+## 9. Fee-in-token sweep (gasless token withdrawal)
+
+A one-time stealth address that received an ERC-20/SPL payment holds the token but no
+native asset, so its owner cannot pay gas to move it. This section defines how a relayer
+moves the token on the owner's behalf and is reimbursed *in that token* — no native-asset
+escrow, and the relayer (not the owner) supplies gas. The owner authorizes everything with
+the reconstructed one-time stealth key, entirely offline; the relayer cannot redirect funds
+or inflate its cut because destination, amount, and fee are all signed.
+
+### 9.1 Ethereum: `StealthTokenSweep` forwarder
+
+A stateless forwarder verifies an owner-signed authorization and moves the token directly
+from the owner to the destination and the relayer; it never custodies funds.
+
+- **Authorization (EIP-712).** Domain `{name: "OpaqueStealthTokenSweep", version: "1",
+  chainId, verifyingContract: forwarder}`. Type:
+  ```
+  Sweep(address token,address owner,address destination,uint256 value,uint256 fee,uint256 nonce,uint256 deadline)
+  ```
+  The owner is the stealth address; `nonce` is the forwarder's per-owner counter; `fee` MUST
+  be `<= value`. The signature MUST recover to `owner`.
+- **Allowance.** The forwarder pulls `value` via `transferFrom`. Allowance is granted in the
+  same transaction by an EIP-2612 `permit` signed by the owner (`sweepWithPermit`), or by a
+  prior `approve` (`sweep`). Tokens without EIP-2612 and without a prior allowance cannot use
+  this path.
+- **Settlement.** The submitter (any address; typically a relayer) receives `fee`; the
+  destination receives `value - fee`. `msg.sender` earns the fee, so no fee recipient is
+  signed. The per-owner `nonce` is consumed before any external call (replay-safe); `deadline`
+  bounds validity.
+
+### 9.2 Solana: relayer as fee payer
+
+Solana lets the fee payer differ from the instruction's signing authority, so no forwarder
+program is needed. The owner builds an SPL transfer (stealth ATA -> destination ATA, plus an
+optional fee transfer stealth ATA -> relayer ATA, and an optional `closeAccount` reclaiming
+rent to the fee payer), sets the relayer as `feePayer`, and partially signs as the token
+authority with the reconstructed stealth keypair. The relayer adds its fee-payer signature,
+pays the network fee, and broadcasts. The relayer's reimbursement is the fee-transfer
+instruction; the owner signs the whole message, so the relayer cannot alter it.
+
+### 9.3 Trust and limitations
+
+This mechanism is permissionless and trust-minimized for the *owner*: a relayer can only
+execute exactly what was signed, or nothing. It has no bond or slashing (none is needed —
+there is no escrow at risk and the relayer is paid only on success). Liveness is best-effort:
+if no relayer submits before `deadline`, the authorization simply expires and may be
+re-issued. The token transfer and its ATAs are visible on-chain (CSAP provides recipient
+unlinkability, not amount privacy).
 
 ## Copyright
 
