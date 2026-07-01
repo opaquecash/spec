@@ -133,6 +133,10 @@ Every node SHOULD expose: `POST /v1/jobs` (advert), `GET /v1/jobs/{jobId}/bids`,
 gossip topic and serves bids it has seen. Browsers and SDKs without a libp2p stack
 use any gateway; nodes never trust gateway data beyond re-gossiping it.
 
+Nodes that serve §9 fee-in-token sweeps additionally expose `POST /v1/sweep`
+(§9.4) and `GET /v1/sweep/info`. Unlike the job routes these are not re-gossiped:
+a sweep is a direct, synchronous request to *this* node to front gas.
+
 ## 4. Relayer node behaviour
 
 1. Subscribe to `opaque/jobs/v1`; serve the HTTP gateway.
@@ -237,6 +241,12 @@ authority with the reconstructed stealth keypair. The relayer adds its fee-payer
 pays the network fee, and broadcasts. The relayer's reimbursement is the fee-transfer
 instruction; the owner signs the whole message, so the relayer cannot alter it.
 
+The relayer MUST co-sign over the transaction's original `recent_blockhash`
+(re-fetching one would invalidate the owner's partial signature), and SHOULD refuse
+to front gas for a transaction that (a) does not name it as fee payer, or (b) touches
+any program outside the token set (SPL Token, Token-2022, Associated Token Account,
+Compute Budget) — the whitelist bounds the compute a stranger can bill to the node.
+
 ### 9.3 Trust and limitations
 
 This mechanism is permissionless and trust-minimized for the *owner*: a relayer can only
@@ -245,6 +255,25 @@ there is no escrow at risk and the relayer is paid only on success). Liveness is
 if no relayer submits before `deadline`, the authorization simply expires and may be
 re-issued. The token transfer and its ATAs are visible on-chain (CSAP provides recipient
 unlinkability, not amount privacy).
+
+### 9.4 Submission interface
+
+A node accepting sweeps exposes on its §3.4 gateway:
+
+- `POST /v1/sweep` — body is tagged by chain:
+  `{"chain": "ethereum", "to": <forwarder>, "data": <calldata>}` or
+  `{"chain": "solana", "transactionBase64": <partially-signed tx>}`.
+  The node validates its guards (EVM: `to` equals its configured forwarder;
+  Solana: §9.2 fee-payer and program checks), fronts the gas, and answers
+  `{"ok": true, "tx": <id>}` on confirmation or `{"ok": false, "error": …}`.
+- `GET /v1/sweep/info` — `{"chains": [{"chain", "operator", "forwarder"?}]}`:
+  per-chain operator identity (the Solana fee payer an owner MUST name when
+  building the transaction) and, on EVM, the forwarder the node will call.
+
+The interface is synchronous because the authorization is self-contained; there is
+no advert, bid, or payload-delivery round. Whether the in-token `fee` covers the
+fronted gas is the node's own pricing decision (§9.3); nodes SHOULD reject sweeps
+whose fee they consider under-priced rather than subsidize them.
 
 ## Copyright
 

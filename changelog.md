@@ -4,6 +4,18 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-07-01
+
+- **relayer-market.md §9.4 added (sweep submission interface); §9.2 and §3.4
+  amended.** The fee-in-token sweep gains a normative HTTP interface on the node
+  gateway: `POST /v1/sweep` (chain-tagged EVM forwarder calldata or partially
+  signed Solana transaction; synchronous, not re-gossiped) and
+  `GET /v1/sweep/info` (per-chain operator + EVM forwarder). §9.2 now requires
+  co-signing over the owner's original blockhash and recommends the fee-payer and
+  token-program-whitelist guards; §3.4 lists the new routes. The previously
+  optional Solana in-token fee transfer is implemented end-to-end (SDK builds the
+  `amount - fee` / `fee` split; the reference node serves the endpoint).
+
 ## 2026-06-13
 
 - **relayer-market.md §9 added (fee-in-token sweep).** Escrow-free, gasless
