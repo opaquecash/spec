@@ -4,6 +4,31 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-07-05
+
+- **CSAP.md §2.1–§2.3, §2.8 — native ed25519 Solana stealth accounts
+  (security fix OPQ-002).** The Solana stealth account is now a native ed25519
+  key derived by a DKSAP tweak on the ed25519 curve: the meta-address gains a
+  third 32-byte half `S_ed = reduce(s_ed)·B` (so it is **98 bytes**,
+  `V‖S‖S_ed`; `s_ed` comes from a third HKDF block, leaving `v`/`s`
+  unchanged), the address is `P_ed = S_ed + h_ed·B` with
+  `h_ed = SHA-512("opaque-solana-stealth-v2" ‖ sec) mod L`, and the one-time
+  spend scalar `a = (reduce(s_ed) + h_ed) mod L` is reconstructable only with
+  `s_ed`. The withdrawn construction seeded the account from
+  `SHA-256("opaque-solana-stealth-v1" ‖ uncompressed(P_stealth))`, which the
+  payer knows — letting the payer recompute the account key and sweep the
+  funds. Sender funding and view-only balance scanning still work from public
+  material; only the spend side is recipient-bound. Legacy 66-byte
+  meta-addresses stay valid for Ethereum and fail closed on Solana. The Solana
+  `stealth_registry` now stores 98-byte meta-addresses.
+- **CSAP.md §2.7 (Solana registry) — `register_keys_on_behalf` now verifies an
+  Ed25519 signature (security fix OPQ-001).** The instruction previously
+  performed no authorization check, so anyone could overwrite any account's
+  meta-address. It now requires an Ed25519 `SigVerify` instruction (introspected
+  via the Instructions sysvar) proving the `registrant` signed a canonical
+  message bound to the program id, registrant, scheme, current nonce, and
+  meta-address; the nonce is consumed to prevent replay.
+
 ## 2026-07-01
 
 - **relayer-market.md §9.4 added (sweep submission interface); §9.2 and §3.4

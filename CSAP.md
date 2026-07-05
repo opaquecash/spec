@@ -45,14 +45,18 @@ Constants fixed by this version:
 
 ### 2.1 Meta-address format
 
-A stealth meta-address is the concatenation of two compressed secp256k1 public keys:
+A stealth meta-address concatenates two compressed secp256k1 public keys and one compressed ed25519 public key:
 
 ```
-metaAddress = compressed(V) ‖ compressed(S)        // 33 + 33 = 66 bytes
-              ^ viewing pubkey   ^ spending pubkey
+metaAddress = compressed(V) ‖ compressed(S) ‖ S_ed        // 33 + 33 + 32 = 98 bytes
+              ^ viewing        ^ spending       ^ ed25519 Solana spend pubkey
 ```
 
-It is serialised as a `0x`-prefixed hex string of 66 bytes (132 hex chars). The **viewing key comes first**.
+It is serialised as a `0x`-prefixed hex string of 98 bytes (196 hex chars). The **viewing key comes first**.
+
+`V` and `S` drive the Ethereum stealth path (ECDH on secp256k1 and the EVM stealth address). `S_ed = s_ed·B` (ed25519 base point `B`) is the recipient's Solana spend key: it makes each Solana stealth account a **native ed25519 key** whose one-time private scalar only the recipient can reconstruct (§2.3, Solana fund custody). The same secp256k1 viewing key `V` drives ECDH and view-tag scanning on **both** chains, so a single scanner serves both; only the spend side is chain-specific.
+
+> **Legacy 66-byte form.** Meta-addresses that omit `S_ed` (66 bytes, `V‖S`) remain valid for the Ethereum path; the Solana path is unavailable for them (a sender fails closed rather than paying into an account the payer could sweep). The 66-byte custody derivation of earlier drafts is withdrawn (see §2.3 and the changelog).
 
 > **⚠ Deviation from EIP-5564.** EIP-5564 serialises the meta-address as `st:eth:0x<spendingPubKey><viewingPubKey>` — **spending key first**. CSAP places the **viewing key first** (`V‖S`). The two encodings are byte-reversed at the 33-byte boundary. Implementers interoperating with EIP-5564 tooling MUST convert. See §4 (Backwards Compatibility); whether to keep this deviation or align with EIP-5564 in a future scheme id is an open decision recorded there.
 
@@ -63,13 +67,15 @@ Keys are derived deterministically from a single wallet signature. There is no k
 1. The wallet signs the **canonical derivation message** (a fixed UTF-8 string; see below). Let `sig` be the raw signature bytes (65 bytes for an Ethereum `personal_sign`/secp256k1 signature; 64 bytes for a Solana ed25519 `signMessage`).
 2. Expand with HKDF:
    ```
-   okm = HKDF(hash = SHA-256, ikm = sig, salt = ∅, info = DOMAIN, L = 64)
-   v = okm[0:32]      // viewing private key
-   s = okm[32:64]     // spending private key
+   okm  = HKDF(hash = SHA-256, ikm = sig, salt = ∅, info = DOMAIN, L = 96)
+   v    = okm[0:32]      // viewing private key   (secp256k1)
+   s    = okm[32:64]     // spending private key  (secp256k1)
+   s_ed = okm[64:96]     // Solana spend seed → ed25519 spend scalar
    ```
-3. `V = v·G`, `S = s·G`, both compressed; `metaAddress = V ‖ S` (§2.1).
+   Expanding to 96 bytes leaves `v` and `s` byte-identical to the earlier 64-byte expansion (HKDF-Expand is a prefix stream), so extending an existing wallet's meta-address does not change its Ethereum keys.
+3. `V = v·G`, `S = s·G` (both compressed secp256k1); `S_ed = reduce(s_ed) · B` (compressed ed25519, base point `B`, order `L`); `metaAddress = V ‖ S ‖ S_ed` (§2.1).
 
-`v` and `s` MUST be valid secp256k1 scalars in `[1, n-1]`. The probability that an HKDF output is `0` or `≥ n` is ≈ 2⁻¹²⁸ and is treated as a derivation failure (see §6).
+`v` and `s` MUST be valid secp256k1 scalars in `[1, n-1]`; `reduce(s_ed)` is `s_ed mod L` taken as a scalar in `[1, L-1]`. The probability that an HKDF output is `0` or out of range is ≈ 2⁻¹²⁸ and is treated as a derivation failure (see §6).
 
 **Canonical derivation message.** This version fixes the message to the chain-neutral string:
 
@@ -99,13 +105,20 @@ Given a recipient meta-address `(V, S)`:
    i.e. drop the `0x04` prefix byte, Keccak-256 the 64-byte `x‖y`, take the last 20 bytes.
 7. Publish an announcement (§2.5) carrying `R`, `metadata` with `metadata[0] = t`, and `stealthAddress`, under scheme id `1`.
 
-**Solana fund custody.** On Solana the 20-byte `stealthAddress` from step 6 is used **only as the scanner-matching identifier** (so one scanner matches both chains). The account that actually holds funds is a deterministic ed25519 keypair both parties can recompute from the stealth point:
+**Solana fund custody.** On Solana the 20-byte `stealthAddress` from step 6 is used **only as the scanner-matching identifier** (so one scanner matches both chains). The account that actually holds funds is a **native ed25519 account** derived by applying the DKSAP tweak on the ed25519 curve, reusing the same secp256k1 ECDH secret `sec` from step 2:
 ```
-solanaSeed   = SHA-256( "opaque-solana-stealth-v1" ‖ uncompressed(P_stealth) )[0:32]
-solanaKeypair = ed25519_from_seed(solanaSeed)
+h_ed  = SHA-512( "opaque-solana-stealth-v2" ‖ sec ) mod L      // ed25519 scalar tweak
+P_ed  = S_ed + h_ed·B                                          // 32-byte ed25519 stealth address
 ```
+`P_ed` is the Solana account address. The sender and any view-only scanner compute it from **public material only** (`S_ed` from the meta-address, `sec` from `r·V` / `v·R`). The one-time **spend scalar** is
+```
+a = ( reduce(s_ed) + h_ed ) mod L                              // recipient side only
+```
+so `P_ed = a·B`. Because deriving `a` requires the recipient's `s_ed` (never shared, never recoverable from `S_ed`), no one but the recipient — **not even the payer** — can spend the account. Since `a` is a raw scalar, not a seed, the account is signed with a raw-scalar EdDSA signer rather than a seed-expanded `Keypair`.
 
-The one-time **spending key** for `P_stealth` is `p_stealth = (s + (s_h mod n)) mod n` (recipient side; see §2.8 step 5).
+> **Withdrawn (OPQ-002).** Earlier drafts derived the account as `ed25519_from_seed( SHA-256("opaque-solana-stealth-v1" ‖ uncompressed(P_stealth)) )`. `P_stealth` is known to the payer, so the payer could recompute the account's private key and sweep the funds. That construction is removed; do not implement it.
+
+The one-time secp256k1 **spending key** for the Ethereum `P_stealth` is `p_stealth = (s + (s_h mod n)) mod n` (recipient side; see §2.8 step 5).
 
 ### 2.4 View tag computation
 
@@ -168,8 +181,13 @@ Registration binds a public account to a meta-address so senders can resolve a r
 - Events: `StealthMetaAddressSet(address indexed registrant, uint256 indexed schemeId, bytes stealthMetaAddress)`, `NonceIncremented(address indexed registrant, uint256 newNonce)`.
 
 **Solana.** `stealth_registry`:
-- `register_keys(scheme_id: u64, stealth_meta_address: Vec<u8> /*MUST be 66*/)` → PDA at seeds `["stealth_meta", registrant, scheme_id.to_le_bytes()]`.
-- `register_keys_on_behalf(...)` with an ed25519-authorised flow and a nonce PDA at seeds `["nonce", registrant]`.
+- `register_keys(scheme_id: u64, stealth_meta_address: Vec<u8> /*MUST be 98*/)` → PDA at seeds `["stealth_meta", registrant, scheme_id.to_le_bytes()]`. The `registrant` signs.
+- `register_keys_on_behalf(...)` with an ed25519-authorised flow and a nonce PDA at seeds `["nonce", registrant]`. A separate `payer` submits; the `registrant` authorises out-of-band by signing the canonical message
+  ```
+  "opaque-stealth-register-on-behalf-v1" ‖ program_id ‖ registrant ‖ scheme_id_le ‖ nonce_le ‖ meta
+  ```
+  with their ed25519 key. The transaction MUST carry an Ed25519 `SigVerify` instruction over that exact message; the handler introspects it via the Instructions sysvar and requires that the verified pubkey equals `registrant`, that the message matches the one rebuilt on-chain from the current `nonce`, and that the pubkey/signature/message are all inline in that instruction. The nonce is consumed on success so the signature cannot be replayed. Without a matching SigVerify instruction the call fails with `InvalidSignature`.
+  > **Fixed (OPQ-001).** An earlier build performed no signature check here, so anyone could overwrite any account's meta-address. Verification is now mandatory.
 - `increment_nonce()`, `resolve()`; clients MAY also read the PDA directly.
 - Event `StealthMetaAddressSet { registrant, scheme_id, stealth_meta_address }`.
 
@@ -183,9 +201,9 @@ A scanner holds the viewing private key `v` and the spending public key `S` (the
 2. `s_h = Keccak256(sec)`; `t' = s_h[0]`.
 3. **View-tag filter:** if `t' ≠ metadata[0]`, skip (no EC addition).
 4. Else compute `P_stealth = S + (s_h mod n)·G` and `addr' = Keccak256(uncompressed(P_stealth)[1:65])[12:32]`.
-5. If `addr' == stealthAddress`, the payment is owned. To spend, reconstruct the one-time key `p_stealth = (s + (s_h mod n)) mod n` (requires the spending private key `s`).
+5. If `addr' == stealthAddress`, the payment is owned. To spend on **Ethereum**, reconstruct the one-time key `p_stealth = (s + (s_h mod n)) mod n` (requires the spending private key `s`). To spend on **Solana**, reconstruct the ed25519 scalar `a = (reduce(s_ed) + h_ed) mod L` where `h_ed = SHA-512("opaque-solana-stealth-v2" ‖ sec) mod L` (§2.3; requires the Solana spend seed `s_ed`).
 
-A scanner that has only `v` (not `s`) can *detect* all incoming payments but cannot spend — enabling delegated/watch-only scanning. This is the basis for the viewing-key disclosure features in `PSR.md` / Phase 5.
+A scanner that has only `v`, `S`, and `S_ed` (no private spend keys) can *detect* all incoming payments and derive both stealth addresses (EVM and the Solana `P_ed`), but cannot spend — enabling delegated/watch-only scanning across both chains. This is the basis for the viewing-key disclosure features in `PSR.md` / Phase 5.
 
 ### 2.9 Name-service meta-address records (ONS seed)
 
