@@ -109,14 +109,24 @@ pub struct OnsRecord {
     pub sol_authority: Pubkey,         // zero if none
     pub wormhole_sequence: u64,        // last applied sequence
     pub updated_at: i64,
+    pub bump: u8,
+    pub revoked: bool,                 // true = tombstone (keys zeroed, floor retained)
 }
 ```
 
 Mirror PDAs are written **only** by `receive_record(posted_vaa)`, which MUST verify the
 VAA emitter is the configured `(chainId = 2, OpaqueNameRegistry)` pair and MUST reject a
 sequence ≤ the stored `wormhole_sequence` (stale/replayed update). There is no
-direct-write path; the mirror is read-only from Solana's perspective. A revoke action
-closes the PDA.
+direct-write path; the mirror is read-only from Solana's perspective.
+
+**Revoke tombstones, never closes (OPQ-004).** A revoke MUST NOT close the PDA: closing
+would destroy `wormhole_sequence`, letting a later-delivered but lower-sequence upsert VAA
+re-create the record fresh and resurrect the name at stale keys (the monotonic floor is
+only skipped for a genuinely new PDA, `name_hash == 0`). Instead a revoke updates the
+record in place — advancing `wormhole_sequence`, keeping `name_hash`, zeroing
+`spend_pubkey`/`view_pubkey`/`eth_owner`/`sol_authority`, and setting `revoked = true` — so
+the floor survives. Resolvers MUST treat a `revoked` record as unresolved (equivalent to no
+record).
 
 **Resolution from Solana:** the SDK derives the PDA from `name_hash` client-side and reads
 one account — no Ethereum RPC, no `getProgramAccounts` scan, no gateway.

@@ -4,6 +4,18 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-07-06
+
+- **ONS.md §3 — ons-mirror revoke tombstones instead of closing (security fix
+  OPQ-004).** Closing the mirror PDA on revoke destroyed the stored
+  `wormhole_sequence`, so a later-delivered but lower-sequence upsert VAA could
+  re-create the record fresh (the monotonic floor is only skipped for a brand-new
+  `name_hash == 0` PDA) and resurrect a revoked name at stale keys. A revoke now
+  updates the record in place: it advances `wormhole_sequence`, keeps `name_hash`,
+  zeroes the key material, and sets a new `revoked` flag. `OnsRecord` gains a
+  trailing `revoked: bool` (account +1 byte); resolvers treat a revoked record as
+  unresolved.
+
 ## 2026-07-05
 
 - **CSAP.md §2.1–§2.3, §2.8 — native ed25519 Solana stealth accounts
