@@ -4,6 +4,37 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-07-10
+
+- **PSR.md §4–§5 — PSR public signals are field-reduced and carried as 32-byte
+  field elements (security fix OPQ-008).** `external_nullifier = keccak256(scope)`
+  and any SHA-256-derived `attestation_id` are now reduced modulo the BN254 scalar
+  field `r` at a single source of truth, so the witness signal, the on-chain public
+  input, and the Poseidon preimage are the identical reduced value — the un-reduced
+  256-bit value made the EVM verifier's `checkField` revert. The Solana
+  `reputation-verifier` now takes `attestation_id`/`external_nullifier` as
+  `[u8; 32]` big-endian (mirroring the EVM `uint256`) instead of `u64`, which had
+  silently capped the domain at 2^64 and made spec/EVM-encoded proofs
+  unrepresentable on Solana.
+- **PSR.md §5 — reputation verifier schema binding + initializer authorization
+  (security fixes OPQ-006, OPQ-007).** `OpaqueReputationVerifierV2` gains an
+  admin-set schema-registry binding: when configured, a proof's `attestation_id`
+  must reference a live registered schema, so a proof cannot claim reputation under
+  a never-registered schema. (Binding the *issuer* still requires the in-circuit
+  commitment to the schema authority — the tracked remediation.) The Solana
+  privacy-pool and reputation-verifier `initialize` handlers are now gated to the
+  program's upgrade authority, closing the unprotected-initializer front-run that
+  could seize the ASP authority or record a rogue Groth16 verifier; the verifier's
+  Groth16 program is additionally pinned by address.
+- **Off-chain hardening (no spec change): OPQ-003/005/009/010/011/012/013.** Relayer
+  nodes re-derive the payload hash and simulate the inner call before bonding (and
+  submit atomically on Solana); the ASP never advances its Solana cursor past an
+  undecoded deposit and recomputes each `label = Poseidon(scope, leafIndex)` rather
+  than trusting the RPC; the Solana relayer validates the job account before
+  slicing; the V2 attestation scanner drops rogue-issuer traits by default; the
+  relayer client binds bids to the user's own jobId/chain; and the frontend caches
+  the setup signature under a non-extractable IndexedDB key.
+
 ## 2026-07-06
 
 - **ONS.md §3 — ons-mirror revoke tombstones instead of closing (security fix

@@ -173,7 +173,14 @@ on-chain.
 - **ASP trust (v1):** a single authorized address posts the ASP root on testnet. This is a
   liveness + curation trust point, decentralised before any mainnet step. The pool's
   *integrity* (no theft, no double-spend) does not depend on the ASP; only *which deposits
-  can withdraw* does.
+  can withdraw* does. The ASP indexer never trusts an RPC's `(label, leafIndex)`: it
+  recomputes `label = Poseidon(scope, leafIndex)` from the on-chain `scope` and rejects any
+  mismatch or non-monotonic index, and it never advances its cursor past a deposit it could
+  not fetch/decode — a silently dropped label would gap the posted root and lock the whole
+  pool (OPQ-005/OPQ-009).
+- **Initializer authorization.** `initialize` (which fixes the pool's ASP authority) is gated
+  to the program's upgrade authority, so a front-runner cannot seize the ASP authority on a
+  fresh deployment and freeze withdrawals (OPQ-007).
 - **Regulatory surface.** This is the highest-regulatory-surface component; mainnet is gated
   on circuit + contract audits and a legal opinion (§8). Testnet only here.
 
