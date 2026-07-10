@@ -108,7 +108,11 @@ to `withdrawal.circom`) proving:
 2. **Qualification:** `value > threshold` (both range-checked `< 2^128`).
 3. **Disclosure nullifier:**
    `disclosure_nullifier = Poseidon(nullifier, context, DOMAIN_DISCLOSURE)`
-   — one consumption per (commitment, context), see §7.
+   — one consumption per **(nullifier, context)**, see §7. (It binds `nullifier` and
+   `context`, not the commitment, so two commitments sharing a `nullifier` collide under the
+   same context — disclosing one blocks disclosing the other. Every deposit MUST use a fresh
+   `nullifier`; binding the commitment into the disclosure nullifier is the circuit-level fix,
+   gated on a trusted-setup ceremony — OPQ-024.)
 4. `value` and `label` are **public signals** — they *are* the disclosed data.
    `label` links the commitment to its `Deposit(commitment, label, value,
    leafIndex)` event, giving the requester the deposit provenance; `value` is

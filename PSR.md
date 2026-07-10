@@ -102,6 +102,15 @@ Keeping `issuer_pk_x`, `trait_data_hash`, and `nonce` private prevents an observ
 
 > **✅ Solana's on-chain V2 upgrade is complete (2026-06-10).** The devnet `groth16-verifier` carries the real V2 verifying key (pinned by the committed proof fixture in `circuits/test/fixtures/v2/`; its earlier swapped BN254 field constants are fixed), and `reputation-verifier::verify_reputation` is on the V2 layout: it CPIs `verify_proof_v2` with the four signals `[merkle_root, attestation_id, external_nullifier, nullifier_hash]`, taking `nullifier_hash` as an instruction input. A real V2 proof has been verified on devnet through the full path (root registration → verification → nullifier consumption → replay rejection). **Ethereum completed the same upgrade earlier** (`OpaqueReputationVerifierV2` + `Groth16VerifierV2`). The TypeScript prover (`@opaquecash/psr-prover`) builds V2 witnesses and a freshly client-generated proof has been verified on devnet through the SDK path, closing the loop. V1 is fully retired.
 
+> **Revocation and the proof path (OPQ-018).** The ZK leaf commits no revocation/expiry field
+> and the verifier does not read the attestation's `revocation_slot`/`expiration`, so a leaf
+> already inside a registered root keeps proving valid after the credential is revoked or
+> expires — bounded by the ~1 h `ROOT_EXPIRY`, though a stale root can be re-registered.
+> Binding a revocation-aware commitment into the leaf is the circuit-level fix, gated on a new
+> trusted-setup ceremony. Until then the indexer MUST rebuild and re-register the Merkle root
+> **excluding revoked/expired leaves** on every revocation event, so a fresh root never
+> contains a dead credential.
+
 ### 6. Nullifiers and Sybil resistance
 
 `nullifier_hash = Poseidon(stealth_pk, external_nullifier)` is deterministic per (stealth identity, action). The on-chain `NullifierEntry` PDA keyed by the nullifier makes a second proof for the same action fail (the account already exists). Choosing a fresh `external_nullifier` per action scope (vote id, campaign id, loan id) is how an application controls anti-replay granularity.

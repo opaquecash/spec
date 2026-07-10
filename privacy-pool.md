@@ -181,6 +181,12 @@ on-chain.
 - **Initializer authorization.** `initialize` (which fixes the pool's ASP authority) is gated
   to the program's upgrade authority, so a front-runner cannot seize the ASP authority on a
   fresh deployment and freeze withdrawals (OPQ-007).
+- **Per-deposit nullifier uniqueness (normative).** `nullifier_hash = Poseidon(nullifier)` is
+  independent of the commitment, so two deposits that reuse the same `nullifier` collapse to
+  one nullifier and the second becomes permanently unspendable once the first is withdrawn.
+  Every deposit MUST therefore draw a **fresh random `(nullifier, secret)`** — the SDK
+  guarantees this. Binding the commitment into the nullifier (`Poseidon(nullifier, label)`) is
+  the circuit-level fix and is gated on a production trusted-setup ceremony (OPQ-024).
 - **Regulatory surface.** This is the highest-regulatory-surface component; mainnet is gated
   on circuit + contract audits and a legal opinion (§8). Testnet only here.
 

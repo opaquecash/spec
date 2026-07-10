@@ -4,6 +4,36 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-07-10 (audit Low/Informational batch)
+
+- **Circuit-gated findings documented (OPQ-018, OPQ-024).** The reputation leaf
+  commits no revocation/expiry, so a revoked/expired credential stays provable
+  within the root TTL (PSR.md §5); the pool and disclosure nullifier hashes omit
+  commitment-specific data, so two notes sharing a `nullifier` collide
+  (privacy-pool.md §7, conditional-disclosure.md — the "per (commitment, context)"
+  claim is corrected to per (nullifier, context)). The complete fixes are
+  in-circuit and gated on a new production trusted-setup ceremony; the deployed
+  circuits carry SECURITY NOTE comments. Interim mitigations are now normative: the
+  SDK draws a fresh `(nullifier, secret)` per deposit, and the indexer re-registers
+  reputation roots excluding revoked/expired leaves on every revocation.
+- **Off-chain / implementation hardening (no protocol change):** relayer submit
+  now rejects post-deadline execution and reclaims job-account rent on slash/cancel
+  (OPQ-023/036); the pool rejects self-recipient payouts and enforces a
+  rent-exemption floor (OPQ-028); the reputation verifier's nullifier flag is made
+  load-bearing (OPQ-040); attestations can be re-issued after revoke/expiry
+  (OPQ-026); disclosure policy group keys are range-checked to `< n`, resolvers
+  must be executable, native announce payloads are size-bounded (OPQ-042); the
+  scanner reduces the hashed secret mod n (OPQ-025); the relayer gateway verifies
+  bid signatures before caching (OPQ-037); the PSR prover pins proving artifacts by
+  digest and requires a real leaf preimage (OPQ-030/038); the app clears sensitive
+  browser storage on disconnect and ships a CSP (OPQ-014/015/031); EVM contracts
+  gained ASP-root history + validation, age-based root eviction, UAB source-chain +
+  zero-emitter checks, submit deadline, and fee-without-recipient guards
+  (OPQ-016/017/022/023/027/029/033); ONS fixed the revoke CEI order, zero-authority
+  overwrite, out-of-order sequences, and added an emitter-change timelock
+  (OPQ-019/020/021/043); the ASP separated its ENS pointer key from the authority
+  (OPQ-035). CI workflows gained least-privilege `permissions:` blocks.
+
 ## 2026-07-10
 
 - **PSR.md §4–§5 — PSR public signals are field-reduced and carried as 32-byte
