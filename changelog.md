@@ -4,6 +4,21 @@ Version history of the Opaque protocol specifications, newest first. Each spec
 carries its own status badge; this file records the cross-cutting decisions and
 normative changes from CSAP v1 forward.
 
+## 2026-07-18 (Starknet integration design)
+
+- **starknet-integration.md added.** Design document (pre-implementation) for
+  extending Opaque to Starknet with STRK20 as the integration target, based on
+  adversarially verified research of 2026-07-18. Core positions: PSR as the
+  eligibility layer STRK20 lacks (three permission tiers: permissionless
+  in-pool gates, the `ScreeningAttestation` seam, an in-circuit SNIP); a
+  Garaga-generated Groth16-BN254 verifier plus u256-limb wrapper as the only
+  on-chain Cairo footprint; counterfactual secp256k1 account-class custody
+  keeping the 98-byte meta-address; native L1→L2 messaging + Hyperlane for
+  mirroring (Wormhole has no Starknet support); and an explicit do-not-port
+  list (privacy pool, Shamir escrow backstop, StealthTokenSweep forwarder).
+  Normative constants (account class hash, salt rule, chain id) land in
+  CSAP.md / UAB.md / payload-format.md when implementation starts.
+
 ## 2026-07-10 (audit Low/Informational batch)
 
 - **Circuit-gated findings documented (OPQ-018, OPQ-024).** The reputation leaf

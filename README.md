@@ -13,6 +13,7 @@ Canonical specifications for the Opaque privacy protocol. These documents descri
 | [relayer-market.md](./relayer-market.md) | Relayer market — gas-private submission (stake, blind jobs, submit-or-slash) | Draft v1 |
 | [privacy-pool.md](./privacy-pool.md) | Privacy pool — amount privacy + association-set compliance (Privacy Pools model) | Draft v1 |
 | [conditional-disclosure.md](./conditional-disclosure.md) | Conditional disclosure — threshold viewing keys (FROST quorum + pool-scoped ZK disclosure) | Draft v1 |
+| [starknet-integration.md](./starknet-integration.md) | Starknet third-chain design — PSR as STRK20's eligibility layer, Cairo port plan | Draft (design) |
 | [changelog.md](./changelog.md) | Version history from CSAP v1 forward | Living |
 
 ## What Opaque is
