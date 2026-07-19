@@ -133,8 +133,10 @@ required behaviour to existing contracts/programs. A scanner that ignores
   are unaffected.
 - **Guardian trust.** Integrity rests on the 13/19 guardian threshold; this is Wormhole's
   trust model, inherited deliberately to avoid a single point of failure.
-- **Relay liveness.** A single Phase-1 relay is a liveness (not integrity) trust point;
-  decentralised in Phase 4.
+- **Relay liveness.** A single Phase-1 relay is a liveness dependency, not an integrity one:
+  it can delay or drop relays but cannot forge them (integrity rests on the guardian threshold
+  above). The relayer market decentralises it ([relayer-market.md](./relayer-market.md)). This
+  is the canonical statement of the cross-chain relay liveness dependency.
 
 ## Copyright
 

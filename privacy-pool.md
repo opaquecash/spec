@@ -170,8 +170,8 @@ on-chain.
   commitment and `nullifierHash` so a depositor cannot withdraw twice with different hashes.
 - **Range checks** (`< 2¹²⁸`) on `value`/`withdrawnValue` prevent field-wraparound in the
   remainder subtraction.
-- **ASP trust (v1):** a single authorized address posts the ASP root on testnet. This is a
-  liveness + curation trust point, decentralised before any mainnet step. The pool's
+- **ASP trust (v1):** a single authorized address posts the ASP root on testnet — a
+  liveness + curation dependency that is decentralised before any mainnet step. The pool's
   *integrity* (no theft, no double-spend) does not depend on the ASP; only *which deposits
   can withdraw* does. The ASP indexer never trusts an RPC's `(label, leafIndex)`: it
   recomputes `label = Poseidon(scope, leafIndex)` from the on-chain `scope` and rejects any
@@ -187,8 +187,8 @@ on-chain.
   Every deposit MUST therefore draw a **fresh random `(nullifier, secret)`** — the SDK
   guarantees this. Binding the commitment into the nullifier (`Poseidon(nullifier, label)`) is
   the circuit-level fix and is gated on a production trusted-setup ceremony (OPQ-024).
-- **Regulatory surface.** This is the highest-regulatory-surface component; mainnet is gated
-  on circuit + contract audits and a legal opinion (§8). Testnet only here.
+- **Regulatory surface.** Of the Opaque primitives this one carries the most regulatory
+  surface; mainnet is gated on circuit + contract audits and a legal opinion (§8).
 
 ## 8. Audit & legal gates (prerequisite for anything beyond testnet)
 

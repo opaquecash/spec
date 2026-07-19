@@ -49,7 +49,7 @@ Positioning: Opaque should occupy that seam as the **neutral, multi-chain, multi
 
 - **Tree building and leaves.** Circomlib Poseidon over BN254, exactly as today. No deployed chain computes Poseidon on-chain — the indexer builds trees, the keeper publishes roots — so **no BN254 Poseidon in Cairo is needed**. (Garaga ships a circom-compatible Poseidon-BN254 since v0.15.4 if that ever changes.)
 - **Prover.** `@opaquecash/psr-prover` (snarkjs fullProve, OPQ-030 artifact pinning, OPQ-038 random nonce) is reused byte-for-byte. Starknet needs only a third **proof encoder** — Garaga calldata with u256 limbs — as a new package sibling to the EVM uint256-array and Solana 64/128/64-BE encoders.
-- **Keeper.** The relayer TS keeper gains a Starknet root-publication duty. With the 1 h TTL and the OPQ-018 rebuild-excluding-revoked obligation, keeper liveness becomes triple-critical.
+- **Keeper.** The relayer TS keeper gains a Starknet root-publication duty. The 1 h TTL and the OPQ-018 rebuild-excluding-revoked obligation ([PSR.md](./PSR.md) §5) now apply on a third chain, so keeper liveness carries across all three.
 
 ## 5. How STRK20 consumes PSR proofs — three permission tiers
 
@@ -110,7 +110,7 @@ Starknet→outbound: L2→L1 finality is ~3–4 h — acceptable for registry sy
 
 1. **Felt252 vs BN254 r** (§4.1b) — soundness-critical limb handling.
 2. **Ceremony/vkey lockstep redeploy** across three chains, with the Cairo verifier regenerated, not reconfigured.
-3. **OPQ-018 inherited:** revoked credentials prove valid until root rotation; the Starknet keeper must rebuild-excluding-revoked within the 1 h TTL.
+3. **OPQ-018 revocation window inherited** (see [PSR.md](./PSR.md) §5): the Starknet keeper must rebuild-excluding-revoked within the 1 h TTL, same as the other chains.
 4. **AA custody friction:** receiving to an undeployed counterfactual address works, but sweeping requires `DEPLOY_ACCOUNT` first — worse than an EVM stealth EOA — and needs a SNIP-9/paymaster flow that does not create fee-payer linkage.
 5. **STRK20 governance gates Tiers 2–3:** screener/auditor keys are admin-set, the screener key is singular, screening operation is undocumented, no published mainnet pool address, SDK is rc on GitHub Packages. Tier 1 is the only zero-permission path; sequence accordingly.
 6. **Proof-system mismatch is permanent** unless Tier 3 lands: PSR stays Groth16-BN254/circomlib-Poseidon; STRK20 is Stwo/Cairo under SNIP-36 Phase 1 (consensus-verified, "de facto" privacy). Composition happens at the contract layer.

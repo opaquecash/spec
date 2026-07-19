@@ -143,11 +143,11 @@ Provide, in `opaquecash/circuits/test/`, at least:
 ## Security Considerations
 
 - **Verifying-key/circuit binding.** The on-chain verification keys are pinned to the production trusted setup by a committed real-proof fixture exercised in CI on three implementations (snarkjs, EVM, Solana); any drift fails the build. Never verify proofs against a different setup's key.
-- **Admin-controlled roots.** `update_merkle_root` is admin-only and roots expire after 1 hour. This is a liveness/censorship trust point. Mitigations: hold `admin` in a multisig (Squads / Gnosis Safe), and move toward permissionless/verifiable root computation. Proofs MUST be pinned to their generation root and resubmitted against that root on retry.
+- **Admin-controlled roots.** `update_merkle_root` is admin-only and roots expire after 1 hour, so root publication is a liveness/censorship dependency: a faulty admin can withhold or censor roots but cannot forge a proof or otherwise affect integrity. Mitigation: hold `admin` in a multisig (Squads / Gnosis Safe); the roadmap moves root computation to a permissionless/verifiable process. Proofs MUST be pinned to their generation root and resubmitted against that root on retry. This is the canonical statement of the admin-root and keeper root-publication liveness dependency; other documents cross-reference it.
 - **On-chain `data` is public.** See §7 — privacy is from unlinkability + ZK, not from the attestation payload. Encrypt sensitive fields.
 - **Issuer trust.** A schema's reputation is only as good as its authority/delegates; a compromised delegate can mint attestations under that schema until removed. Keep delegate sets small; prefer revocable schemas for sensitive credentials.
 - **Nullifier scope.** Reusing an `external_nullifier` across contexts links those actions for one identity; using a fresh scope per action preserves unlinkability.
-- **Soundness.** Relies on the Groth16 trusted setup (use a published ceremony, e.g. Hermez Powers of Tau) and on circuit correctness — both REQUIRE a ZK-specific audit before mainnet (Veridise / zkSecurity / Hexens).
+- **Soundness.** Relies on the Groth16 trusted setup (a published ceremony, e.g. Hermez Powers of Tau) and on circuit correctness. Mainnet is gated on a production multi-party ceremony and a ZK-specific audit (Veridise / zkSecurity / Hexens).
 - **Field encoding.** `attestation_id`/`external_nullifier` cross the program boundary as `u64` (`u64_to_be32`, big-endian into 32 bytes) but are field elements in-circuit; provers MUST pack them identically when building witnesses, or proofs silently fail to bind.
 
 ## Copyright
