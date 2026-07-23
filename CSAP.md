@@ -67,12 +67,13 @@ Keys are derived deterministically from a single wallet signature. There is no k
 1. The wallet signs the **canonical derivation message** (a fixed UTF-8 string; see below). Let `sig` be the raw signature bytes (65 bytes for an Ethereum `personal_sign`/secp256k1 signature; 64 bytes for a Solana ed25519 `signMessage`).
 2. Expand with HKDF:
    ```
-   okm  = HKDF(hash = SHA-256, ikm = sig, salt = ∅, info = DOMAIN, L = 96)
+   okm  = HKDF(hash = SHA-256, ikm = sig, salt = ∅, info = DOMAIN, L = 128)
    v    = okm[0:32]      // viewing private key   (secp256k1)
    s    = okm[32:64]     // spending private key  (secp256k1)
    s_ed = okm[64:96]     // Solana spend seed → ed25519 spend scalar
+   d    = okm[96:128]    // dApp-identity root (§2.10); no meta-address material
    ```
-   Expanding to 96 bytes leaves `v` and `s` byte-identical to the earlier 64-byte expansion (HKDF-Expand is a prefix stream), so extending an existing wallet's meta-address does not change its Ethereum keys.
+   Each widening of `L` (64 → 96 → 128) leaves all earlier blocks byte-identical (HKDF-Expand is a prefix stream), so extending an existing wallet's derivation never changes its published keys. Only `L` may ever grow; changing `salt` or `info` is NOT prefix-stable and rotates every existing key.
 3. `V = v·G`, `S = s·G` (both compressed secp256k1); `S_ed = reduce(s_ed) · B` (compressed ed25519, base point `B`, order `L`); `metaAddress = V ‖ S ‖ S_ed` (§2.1).
 
 `v` and `s` MUST be valid secp256k1 scalars in `[1, n-1]`; `reduce(s_ed)` is `s_ed mod L` taken as a scalar in `[1, L-1]`. The probability that an HKDF output is `0` or out of range is ≈ 2⁻¹²⁸ and is treated as a derivation failure (see §6).
@@ -208,6 +209,23 @@ A scanner that has only `v`, `S`, and `S_ed` (no private spend keys) can *detect
 ### 2.9 Name-service meta-address records (ONS seed)
 
 A meta-address MAY additionally be published under an existing name service so senders can resolve a human-readable name instead of a registry lookup. The record key is the reverse-DNS string **`com.opaque.meta`** (ENSIP-5 style): on ENS it is a text record (`text(node, "com.opaque.meta")`), on SNS the equivalent record field of the `.sol` domain. The record value is the §2.1 serialisation — the `0x`-prefixed 132-hex-char `V‖S` meta-address — optionally prefixed with `st:opq:` for self-description; resolvers MUST accept both forms and MUST validate that both 33-byte halves are valid compressed secp256k1 points before use. The on-chain registry (§2.7) remains authoritative where both exist: a resolver finding a conflict SHOULD prefer the registry entry for the address the name resolves to. This record is the read-path seed for the Opaque Name Service (`alice.opq.eth`, specified in [ONS.md](./ONS.md)); writers without an ONS name set the record manually through their name-service tooling.
+
+### 2.10 Per-dApp wallet derivation (dApp-identity root)
+
+The fourth HKDF block `d = okm[96:128]` (§2.2) roots a family of deterministic, per-origin transacting accounts — the identities a wallet client (e.g. the Opaque browser extension) presents to each dApp. These are **not stealth addresses**: they are ordinary accounts the user transacts *from*, funded privately via stealth sweeps. `d` is a one-way HKDF sibling of `s`, so compromise of any per-dApp key reveals nothing about stealth funds, and vice versa.
+
+Derivation, for a dApp identified by its normalized web origin (`scheme://host[:port]`, lowercase scheme + host, default ports stripped, path/query/fragment dropped; opaque origins MUST be rejected):
+
+```
+salt         = Keccak256(utf8(origin))                    // persistent mode (default)
+             | Keccak256(utf8(origin ‖ ":" ‖ nonce))      // ephemeral mode (per-session nonce)
+             | salt(aliasTarget)                          // linked mode (user-declared alias)
+
+evmKey       = HKDF(SHA-256, ikm = d, salt, info = "opaque-dapp-evm-v1", L = 32)  mod n   // reject 0
+solSeed      = HKDF(SHA-256, ikm = d, salt, info = "opaque-dapp-sol-v1", L = 32)          // ed25519 seed
+```
+
+The EVM and Solana identities for one origin use distinct `info` strings and are therefore mutually unlinkable. Origin strings MUST come from the browser (e.g. `sender.origin`), never from page-supplied data. Ephemeral nonces are session-scoped secrets: discarding a nonce permanently orphans any funds remaining on its address, so clients MUST sweep residue before discard (or refuse while the balance is above dust).
 
 ## Rationale
 
